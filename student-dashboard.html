@@ -121,7 +121,7 @@
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-label">Student Menu</div>
-      <a href="student-dashboard" class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="#" class="nav-item active" onclick="showTab('assigned');return false;"><span class="nav-icon">🏠</span> Dashboard</a>
       <a href="#" class="nav-item" onclick="showTab('assigned');return false;"><span class="nav-icon">📋</span> Assigned Tasks<span class="nav-badge" id="sidebar-task-count">0</span></a>
       <a href="#" class="nav-item" onclick="showTab('schedule');return false;"><span class="nav-icon">📅</span> My Schedule</a>
       <a href="#" class="nav-item" onclick="showTab('own');return false;"><span class="nav-icon">✅</span> My Tasks</a>
@@ -226,8 +226,8 @@
               <div class="settings-card">
                 <div class="settings-card-header"><div class="settings-card-title">Notifications</div></div>
                 <div class="settings-card-body">
-                  <div class="settings-row"><div><div class="settings-row-label">Task Due Reminders</div><div class="settings-row-sub">Get notified when a task is due soon</div></div><label class="toggle"><input type="checkbox" checked /><span class="toggle-slider"></span></label></div>
-                  <div class="settings-row"><div><div class="settings-row-label">Overdue Alerts</div><div class="settings-row-sub">Alert when tasks pass their due date</div></div><label class="toggle"><input type="checkbox" checked /></label></div>
+                  <div class="settings-row"><div><div class="settings-row-label">Task Due Reminders</div><div class="settings-row-sub">Get notified when a task is due soon</div></div><label class="toggle"><input type="checkbox" id="tog-reminders" onchange="savePref('reminders',this.checked)" /><span class="toggle-slider"></span></label></div>
+                  <div class="settings-row"><div><div class="settings-row-label">Overdue Alerts</div><div class="settings-row-sub">Alert when tasks pass their due date</div></div><label class="toggle"><input type="checkbox" id="tog-overdue" onchange="savePref('overdue',this.checked)" /><span class="toggle-slider"></span></label></div>
                 </div>
               </div>
             </div>
@@ -235,7 +235,7 @@
               <div class="settings-card">
                 <div class="settings-card-header"><div class="settings-card-title">Appearance</div></div>
                 <div class="settings-card-body">
-                  <div class="settings-row"><div><div class="settings-row-label">Compact Mode</div><div class="settings-row-sub">Reduce padding for a denser layout</div></div><label class="toggle"><input type="checkbox" /><span class="toggle-slider"></span></label></div>
+                  <div class="settings-row"><div><div class="settings-row-label">Compact Mode</div><div class="settings-row-sub">Reduce padding for a denser layout</div></div><label class="toggle"><input type="checkbox" id="tog-compact" onchange="savePref('compact',this.checked);applyCompact(this.checked)" /><span class="toggle-slider"></span></label></div>
                 </div>
               </div>
             </div>
@@ -303,7 +303,7 @@
   const user = JSON.parse(localStorage.getItem('tf_user')||'null');
   if (!user || user.role !== 'student') window.location.href = 'login.html';
 
-  const STUDENT_NAME = user?.name || '';
+  let STUDENT_NAME = user?.name || '';
 
   function signOut(){ localStorage.removeItem('tf_user'); window.location.href='login.html'; }
 
@@ -312,11 +312,10 @@
 
   function getAccounts()    { return JSON.parse(localStorage.getItem('tf_accounts')||'[]'); }
   function saveAccounts(a)  { localStorage.setItem('tf_accounts',JSON.stringify(a)); }
-  function getAssignments() { return JSON.parse(localStorage.getItem('tf_assignment')||'[]'); }
+  function getAssignments() { return JSON.parse(localStorage.getItem('tf_assignments')||'[]'); }
 
-  
-  function getSubmissions() { return JSON.parse(localStorage.getItem('tf_submisions')||'[]'); }
-  function saveSubmissions(a){ localStorage.setItem('tf_submisions',JSON.stringify(a)); }
+  function getSubmissions() { return JSON.parse(localStorage.getItem('tf_submissions')||'[]'); }
+  function saveSubmissions(a){ localStorage.setItem('tf_submissions',JSON.stringify(a)); }
 
   function getSchedule()    { return JSON.parse(localStorage.getItem('tf_schedule_'+STUDENT_NAME)||'[]'); }
   function saveSchedule(a)  { localStorage.setItem('tf_schedule_'+STUDENT_NAME,JSON.stringify(a)); }
@@ -340,12 +339,13 @@
     });
     if(tab==='schedule') renderCalendar();
     if(tab==='own')      renderOwnTasks();
-    if(tab==='settings') initSettings();
+    if(tab==='settings'){ initSettings(); loadPrefsIntoUI(); }
   }
 
   
   function getMyAssignments(){
-    return getAssignments().filter(a=>a.student===STUDENT_NAME);
+    const name=STUDENT_NAME.toLowerCase();
+    return getAssignments().filter(a=>(a.student||'').toLowerCase()===name);
   }
 
   function renderAssigned(){
@@ -356,7 +356,7 @@
       const sub=submissions.find(s=>s.taskId==a.id&&s.studentName===STUDENT_NAME);
       const today=new Date().toISOString().split('T')[0];
 
-      const overdue=a.dueDate&&a.dueDate<=today&&!sub;
+      const overdue=a.dueDate&&a.dueDate<today&&!sub;
 
       const bc=sub?'badge-submitted':overdue?'badge-overdue':'badge-pending';
       const bt=sub?'Submitted':overdue?'Overdue':'Pending';
@@ -395,8 +395,12 @@
     showToast('Task submitted!');
   }
 
-  let calYear=new Date().getFullYear(), calMonth=3;
+  let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
   function changeMonth(d){
+    calMonth += d;
+    if(calMonth > 11){ calMonth = 0; calYear++; }
+    if(calMonth < 0){ calMonth = 11; calYear--; }
+    renderCalendar();
   }
   function goToday(){ calYear=new Date().getFullYear(); calMonth=new Date().getMonth(); renderCalendar(); }
 
@@ -408,7 +412,7 @@
     const byDate={};
     function addEv(ds,ev){ if(!ds)return; if(!byDate[ds])byDate[ds]=[]; byDate[ds].push(ev); }
 
-    const assignments=getAssignments().filter(a=>a.student===STUDENT_NAME);
+    const assignments=getAssignments().filter(a=>(a.student||'').toLowerCase()===STUDENT_NAME.toLowerCase());
     const submissions=getSubmissions();
     assignments.forEach(a=>{ if(!a.dueDate)return; const sub=submissions.find(s=>s.taskId==a.id&&s.studentName===STUDENT_NAME); addEv(a.dueDate,{ label:a.title, cls:sub?'type-teacher-submitted':'type-teacher-'+(a.priority||'medium'), type:'📋 Teacher task', due:a.dueDate, priority:a.priority, status:sub?'Submitted ✓':'Pending', note:a.desc }); });
     schedule.forEach(e=>{ const ds=e.time?e.time.split('T')[0]:null; if(!ds)return; const timeStr=e.time?new Date(e.time).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}):''; addEv(ds,{ label:(timeStr?timeStr+' ':'')+e.title, cls:'type-personal', type:'📅 Personal event', due:ds, status:'', note:e.notes }); });
@@ -419,7 +423,8 @@
     function ds(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
 
     function cell(dayNum,dateS,other){
-      let cls='cal-cell'+(other?' other-month':'');
+      const todayStr=ds(today);
+      let cls='cal-cell'+(other?' other-month':'')+(dateS===todayStr?' today':'');
       const evs=(byDate[dateS]||[]);
       const evHtml=evs.slice(0,3).map(ev=>`<div class="cal-event ${ev.cls}" onclick="showPopup(event,'${encodeURIComponent(JSON.stringify(ev))}')" title="${ev.label}">${ev.label}</div>`).join('')+(evs.length>3?`<div style="font-size:.65rem;color:#555;padding:.1rem .2rem;">+${evs.length-3} more</div>`:'');
       return `<div class="${cls}"><div class="cal-day-num">${dayNum}</div>${evHtml}</div>`;
@@ -473,7 +478,7 @@
     document.getElementById('s-name').value=me.name||'';
     document.getElementById('s-email').value=me.email||'';
     document.getElementById('s-pass').value='';
-    document.getElementById('s-task-count').textContent=getAssignments().length+' tasks assigned';
+    document.getElementById('s-task-count').textContent=getMyAssignments().length+' tasks assigned to me';
     document.getElementById('s-own-count').textContent=getOwnTasks().length+' personal tasks';
     showSettingsTab('profile');
   }
@@ -482,17 +487,46 @@
     const name  = document.getElementById('s-name').value.trim();
     const email = document.getElementById('s-email').value.trim().toLowerCase();
     const pass  = document.getElementById('s-pass').value;
+    if(!name) { showToast('Name cannot be empty.'); return; }
     if(!email){ showToast('Email cannot be empty.'); return; }
-    const accounts=getAccounts(), idx=accounts.findIndex(a=>a.email===user.email);
+    if(pass && pass.length < 6){ showToast('Password must be at least 6 characters.'); return; }
+    const accounts=getAccounts(), idx=accounts.findIndex(a=>a.email.toLowerCase()===user.email.toLowerCase());
     if(idx===-1){ showToast('Account not found.'); return; }
     accounts[idx].name=name;
     accounts[idx].email=email;
     if(pass) accounts[idx].password=pass;
     saveAccounts(accounts);
+
+    // If name changed, migrate personal data to new key and update assignment records
+    if(name !== STUDENT_NAME){
+      const oldName = STUDENT_NAME;
+      const schedule = getSchedule();
+      const ownTasks = getOwnTasks();
+      const prefs    = getPrefs();
+      // update assignments that referenced old name
+      const assignments = getAssignments();
+      assignments.forEach(a=>{ if((a.student||'').toLowerCase()===oldName.toLowerCase()) a.student=name; });
+      localStorage.setItem('tf_assignments', JSON.stringify(assignments));
+      // update submissions that referenced old name
+      const subs = getSubmissions();
+      subs.forEach(s=>{ if((s.studentName||'').toLowerCase()===oldName.toLowerCase()) s.studentName=name; });
+      localStorage.setItem('tf_submissions', JSON.stringify(subs));
+      // migrate keys
+      STUDENT_NAME = name;
+      saveSchedule(schedule);
+      saveOwnTasks(ownTasks);
+      localStorage.setItem('tf_prefs_'+name, JSON.stringify(prefs));
+      localStorage.removeItem('tf_schedule_'+oldName);
+      localStorage.removeItem('tf_own_'+oldName);
+      localStorage.removeItem('tf_prefs_'+oldName);
+    }
+
     user.name=name; user.email=email;
     localStorage.setItem('tf_user',JSON.stringify(user));
     document.getElementById('sidebar-name').textContent=name;
     document.getElementById('sidebar-avatar').textContent=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('s-pass').value='';
+    renderAll();
     showToast('Profile saved!');
   }
 
@@ -505,7 +539,20 @@
   }
 
   function showToast(msg){ const t=document.createElement('div'); t.className='toast show'; t.textContent=msg; document.querySelector('.toast-container').appendChild(t); setTimeout(()=>t.remove(),3000); }
+
+  function getPrefs(){ return JSON.parse(localStorage.getItem('tf_prefs_'+STUDENT_NAME)||'{}'); }
+  function savePref(key,val){ const p=getPrefs(); p[key]=val; localStorage.setItem('tf_prefs_'+STUDENT_NAME,JSON.stringify(p)); }
+  function applyCompact(on){ document.body.classList.toggle('compact',on); }
+  function loadPrefsIntoUI(){
+    const p=getPrefs();
+    const rd=document.getElementById('tog-reminders'); if(rd) rd.checked=p.reminders!==false;
+    const od=document.getElementById('tog-overdue');   if(od) od.checked=p.overdue!==false;
+    const cm=document.getElementById('tog-compact');   if(cm) cm.checked=!!p.compact;
+    applyCompact(!!p.compact);
+  }
+
   function renderAll(){ renderStats(); renderAssigned(); }
+  loadPrefsIntoUI();
   renderAll();
   </script>
 </body>
