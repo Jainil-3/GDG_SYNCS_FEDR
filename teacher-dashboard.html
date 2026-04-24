@@ -84,7 +84,7 @@
       <a href="#" class="nav-item" onclick="showTab('submissions');return false;">
         <span class="nav-icon">📬</span> Submissions
       </a>
-      <a href="settings.html" class="nav-item">
+      <a href="#" class="nav-item" onclick="showTab('settings');return false;">
         <span class="nav-icon">⚙️</span> Settings
       </a>
     </div>
@@ -137,7 +137,7 @@
       <div class="tab-bar">
         <div class="tab active" id="tab-assigned"    onclick="showTab('assigned')">Assigned Tasks</div>
         <div class="tab"        id="tab-submissions" onclick="showTab('submissions')">Submissions</div>
-        <div class="tab"        id="tab-setting"     onclick="showTab('settings')">⚙️ Settings</div>
+        <div class="tab"        id="tab-settings"    onclick="showTab('settings')">⚙️ Settings</div>
       </div>
 
       <div id="panel-assigned">
@@ -427,7 +427,7 @@
       return;
     }
     tbody.innerHTML = assignments.map(a=>{
-      const subs = submissions.filter(s=>s.taskId===a.id);
+      const subs = submissions.filter(s=>s.taskId==a.id);
       const isSubmitted = subs.length>0;
       const today = new Date().toISOString().split('T')[0];
 
@@ -478,7 +478,7 @@
     if (!submissions.length) { tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:2rem;">No submissions yet.</td></tr>`; return; }
     const sorted=[...submissions].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
     tbody.innerHTML=sorted.map(s=>{
-      const task=assignments.find(a=>a.id===s.taskId);
+      const task=assignments.find(a=>a.id==s.taskId);
       const dot={high:'🔴',medium:'🟡',low:'🟢'}[task?.priority]||'';
       const time=new Date(s.submittedAt).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
       return `<tr><td style="font-weight:600;">${s.studentName}</td><td>${task?.title||'—'}</td><td>${dot} ${task?.priority||'—'}</td><td>${time}</td><td style="color:var(--text-muted);font-size:.85rem;">${s.note||'—'}</td></tr>`;
