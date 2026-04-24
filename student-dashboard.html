@@ -121,7 +121,7 @@
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-label">Student Menu</div>
-      <a href="#" class="nav-item active" onclick="showTab('assigned');return false;"><span class="nav-icon">🏠</span> Dashboard</a>
+      <a href="student-dashboard" class="nav-item active"><span class="nav-icon">🏠</span> Dashboard</a>
       <a href="#" class="nav-item" onclick="showTab('assigned');return false;"><span class="nav-icon">📋</span> Assigned Tasks<span class="nav-badge" id="sidebar-task-count">0</span></a>
       <a href="#" class="nav-item" onclick="showTab('schedule');return false;"><span class="nav-icon">📅</span> My Schedule</a>
       <a href="#" class="nav-item" onclick="showTab('own');return false;"><span class="nav-icon">✅</span> My Tasks</a>
@@ -303,7 +303,7 @@
   const user = JSON.parse(localStorage.getItem('tf_user')||'null');
   if (!user || user.role !== 'student') window.location.href = 'login.html';
 
-  let STUDENT_NAME = user?.name || '';
+  const STUDENT_NAME = user?.name || '';
 
   function signOut(){ localStorage.removeItem('tf_user'); window.location.href='login.html'; }
 
@@ -496,37 +496,11 @@
     accounts[idx].email=email;
     if(pass) accounts[idx].password=pass;
     saveAccounts(accounts);
-
-    // If name changed, migrate personal data to new key and update assignment records
-    if(name !== STUDENT_NAME){
-      const oldName = STUDENT_NAME;
-      const schedule = getSchedule();
-      const ownTasks = getOwnTasks();
-      const prefs    = getPrefs();
-      // update assignments that referenced old name
-      const assignments = getAssignments();
-      assignments.forEach(a=>{ if((a.student||'').toLowerCase()===oldName.toLowerCase()) a.student=name; });
-      localStorage.setItem('tf_assignments', JSON.stringify(assignments));
-      // update submissions that referenced old name
-      const subs = getSubmissions();
-      subs.forEach(s=>{ if((s.studentName||'').toLowerCase()===oldName.toLowerCase()) s.studentName=name; });
-      localStorage.setItem('tf_submissions', JSON.stringify(subs));
-      // migrate keys
-      STUDENT_NAME = name;
-      saveSchedule(schedule);
-      saveOwnTasks(ownTasks);
-      localStorage.setItem('tf_prefs_'+name, JSON.stringify(prefs));
-      localStorage.removeItem('tf_schedule_'+oldName);
-      localStorage.removeItem('tf_own_'+oldName);
-      localStorage.removeItem('tf_prefs_'+oldName);
-    }
-
     user.name=name; user.email=email;
     localStorage.setItem('tf_user',JSON.stringify(user));
     document.getElementById('sidebar-name').textContent=name;
     document.getElementById('sidebar-avatar').textContent=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     document.getElementById('s-pass').value='';
-    renderAll();
     showToast('Profile saved!');
   }
 

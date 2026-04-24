@@ -74,7 +74,7 @@
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-label">Teacher Menu</div>
-      <a href="#" class="nav-item active" onclick="showTab('assigned');return false;">
+      <a href="teacher-dashboard" class="nav-item active">
         <span class="nav-icon">🏠</span> Dashboard
       </a>
       <a href="#" class="nav-item" onclick="showTab('assigned');return false;">
@@ -307,11 +307,6 @@
       const el=document.getElementById('tp-'+id);
       if(el) el.style.display=id===t?'block':'none';
     });
-    document.querySelectorAll('#panel-settings nav > div').forEach(el=>{
-      const active=el.getAttribute('onclick')?.includes("'"+t+"'");
-      el.style.color=active?'#4f6ef7':'#888';
-      el.style.background=active?'rgba(79,110,247,.1)':'';
-    });
     if(t==='data'){
       document.getElementById('t-task-count').textContent=getAssignments().filter(a=>a.createdBy===user.email).length+' tasks assigned';
       document.getElementById('t-student-count').textContent=getStudents().length+' registered students';
@@ -420,7 +415,6 @@
     if (!confirm('Delete this assignment?')) return;
     saveAssignments(getAssignments().filter(a=>a.id!=id));
     document.getElementById('detail-panel').classList.remove('open');
-    activeDetailId = null;
     renderAll();
   }
 
@@ -498,8 +492,7 @@
   }
 
   function renderStats() {
-    const a=getAssignments().filter(a=>a.createdBy===user.email);
-    const s=getSubmissions().filter(sub=>a.some(task=>task.id==sub.taskId));
+    const a=getAssignments().filter(a=>a.createdBy===user.email), s=getSubmissions();
     const total=a.length, submitted=s.length, pending=Math.max(0,total-submitted);
     const rate=total?Math.round((submitted/total)*100):0;
     document.getElementById('stat-total').textContent=total;
