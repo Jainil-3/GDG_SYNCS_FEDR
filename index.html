@@ -124,6 +124,18 @@
 </div>
 
 <div class="toast-container"></div>
+<script>
+  (function() {
+    const u = JSON.parse(localStorage.getItem('tf_user') || 'null');
+    if (!u) {
+      window.location.replace('login.html');
+    } else if (u.role === 'educator') {
+      window.location.replace('teacher-dashboard.html');
+    } else {
+      window.location.replace('student-dashboard.html');
+    }
+  })();
+</script>
 <script src="js/app.js"></script>
 <script src="js/ui.js"></script>
 <script>

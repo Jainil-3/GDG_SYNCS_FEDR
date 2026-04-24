@@ -6,6 +6,13 @@
   <title>TaskFlow – Teacher Dashboard</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/pages.css" />
+  <script>
+    (function() {
+      const u = JSON.parse(localStorage.getItem('tf_user') || 'null');
+      if (!u) { window.location.replace('login.html'); }
+      else if (u.role !== 'educator') { window.location.replace('student-dashboard.html'); }
+    })();
+  </script>
   <style>
     .role-badge{display:inline-flex;align-items:center;gap:.4rem;background:rgba(79,110,247,.15);color:#7a9af8;border:1px solid rgba(79,110,247,.25);border-radius:20px;font-size:.72rem;font-weight:600;padding:.2rem .7rem;letter-spacing:.04em;text-transform:uppercase}
     .submission-row{cursor:pointer;transition:background .1s}
