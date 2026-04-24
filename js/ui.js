@@ -24,6 +24,11 @@
     resetForm();
   });
 
+  document.getElementById('modal-cancel-2')?.addEventListener('click', () => {
+    closeModal('task-modal', 'task-overlay');
+    resetForm();
+  });
+
   
   document.getElementById('save-tasks')?.addEventListener('click', handleAddTask);
 
@@ -80,7 +85,7 @@
     
     const visible = activeTasks.filter(t => {
       const match = t.title.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q);
-      if (filter === 'done')    return match && t.done = true;
+      if (filter === 'done')    return match && t.done === true;
       if (filter === 'pending') return match && !t.done;
       return match;
     });
@@ -158,7 +163,7 @@
 
     } else if (action === 'delete') {
       
-      tasks = tasks.filter(t => t.id === id);
+      tasks = tasks.filter(t => t.id !== id);
       saveTasks(tasks);
       renderBoard();
       showToast('🗑 Task deleted.');
@@ -288,8 +293,7 @@
 
       const target = item.dataset.tab;
       document.querySelectorAll('.settings-panel').forEach(p => {
-        
-        p.style.display = p.dataset.panel = target ? 'flex' : 'none';
+        p.style.display = (p.dataset.panel === target) ? 'flex' : 'none';
       });
     });
   });
@@ -299,6 +303,10 @@
     if (confirm('Delete ALL tasks permanently? This cannot be undone.')) {
       saveTasks([]);
       showToast('🗑 All tasks cleared.');
+      const taskCountEl = document.getElementById('settings-task-count');
+      if (taskCountEl) taskCountEl.textContent = '0 tasks in storage';
+      const badge = document.getElementById('sidebar-task-count');
+      if (badge) badge.textContent = '0';
     }
   });
 
